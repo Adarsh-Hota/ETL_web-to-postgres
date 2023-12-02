@@ -1,0 +1,39 @@
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.operators.empty import EmptyOperator
+from airflow.operators.postgres_operator import PostgresOperator
+
+from datetime import datetime, timedelta
+from extract import extract_data
+
+with DAG(
+  'etl_postgres_pipeline',
+  description="A simple ETL pipeline using Python,PostgreSQL and Apache Airflow",
+  start_date=datetime(year=2023, month=2, day=5),
+  schedule_interval=timedelta(minutes=5)
+) as dag:
+  
+  start_pipeline = EmptyOperator(
+		task_id='start_pipeline',
+	)
+  
+  create_table = PostgresOperator(
+    task_id='create_table',
+    postgres_conn_id='postgres_connection',
+    sql='sql/create_table.sql'
+  )
+  
+  etl = PythonOperator(
+    task_id = 'extract_data',
+    python_callable = extract_data
+  )
+
+  clean_table = PostgresOperator(
+      task_id='clean_sql_table',
+      postgres_conn_id='postgres_connection',
+      sql=["""SOME SQL"""]
+  )
+    
+  end_pipeline = EmptyOperator(
+      task_id='end_pipeline',
+  )
